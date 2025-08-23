@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>파일 확장자 차단</title>
+    <style>
+
+        .wrap {
+            max-width: 980px;
+            margin: 24px auto;
+        }
+
+        .row {
+            margin: 18px 0;
+        }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .fixed-list label {
+            margin-right: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hint {
+            font-weight: normal;
+            font-size: 14px;
+            color: #8b949e;
+            margin-left: 6px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 10px;
+            margin: 6px;
+        }
+
+        .chip button {
+            border: 0;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .box {
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            min-height: 160px;
+            padding: 10px;
+        }
+
+        .controls {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .controls input[type="text"] {
+            width: 520px;
+            padding: 8px 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+        }
+
+        #add-btn {
+            padding: 8px 12px;
+            border: 1px solid #d0d7de;
+            background: #f6f8fa;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .count {
+            color: #57606a;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <!-- 고정 확장자 -->
+    <div class="row fixed-extensions">
+        <span class="label">고정 확장자</span>
+
+        <div class="fixed-list">
+            <label th:each="extension : ${fixedExtensions}">
+                <input class="fixed-toggle" th:attr="data-id=${extension.id}"
+                       th:checked="${extension.active}"
+                       type="checkbox"/>
+                <span th:text="${extension.name}">exe</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- 커스텀 확장자 입력 -->
+    <div class="row custom-extension-input">
+        <span class="label">커스텀 확장자
+            <span class="hint" th:text="'(최대 ' + ${maxCustomExtensionLength} + '글자)'">(최대 20글자)</span>
+        </span>
+        <div class="controls">
+            <input id="custom-input" placeholder="확장자 입력"
+                   th:attr="maxlength=${maxCustomExtensionLength}"
+                   type="text"/>
+            <button class="btn" id="add-btn" type="button">+추가</button>
+        </div>
+    </div>
+
+    <!-- 커스텀 확장자 목록/카운트 -->
+    <div class="row custom-extension-list" th:attr="data-max-custom-count=${maxCustomExtensionCount}">
+        <div class="count">
+            <span id="custom-count" th:text="${#lists.size(customExtensions)}">0</span> /
+            <span th:text="${maxCustomExtensionCount}">200</span>
+        </div>
+        <div class="box" id="custom-chips">
+            <span class="chip" th:attr="data-id=${c.id}" th:each="c : ${customExtensions}">
+                <span th:text="${c.name}">sh</span>
+                <button class="chip-del" type="button">×</button>
+            </span>
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+
+    // 고정 확장자 토글
+    let toggleLocked = false;
+
+    function initFixedExtensionToggles() {
+
+
+        document.querySelectorAll('.fixed-toggle').forEach(cb => {
+            cb.addEventListener('change', async () => {
+                if (toggleLocked) {
+                    cb.checked = !cb.checked; // 연속 클릭 막기
+                    return;
+                }
+                toggleLocked = true;
+
+                const id = cb.dataset.id;
+                const next = cb.checked;
+
+                try {
+                    const res = await fetch(`/extensions/manage/fixed/${id}?active=${next}`, {
+                        method: 'PATCH'
+                    });
+
+                    if (!res.ok) {
+                        const msg = await res.text();
+                        throw new Error(msg);
+                    }
+                } catch (e) {
+                    cb.checked = !next;
+                    alert(e.message + '\n새로고침 해주세요');
+                } finally {
+                    setTimeout(() => {
+                        toggleLocked = false;
+                    }, 300);
+                }
+            });
+        });
+    }
+
+
+    // 커스텀 확장자 입력 길이 제한을 위한 입력 감지
+    function initCustomInputLengthGuard() {
+        const input = document.getElementById('custom-input');
+        const maxLen = parseInt(input.getAttribute('maxlength'), 10);
+
+        input.addEventListener('keydown', (e) => {
+            const value = input.value;
+
+            if (e.ctrlKey || e.metaKey || e.altKey) return; // 조합키 무시(ex. 맥북 새로고침..)
+
+            if (value.length >= maxLen && e.key.length === 1) { // 문자 입력일 때
+                e.preventDefault();
+                alert(`확장자는 최대 ${maxLen}자까지 입력 가능합니다.`);
+
+            }
+        });
+    }
+
+
+    // 커스텀 확장자
+    function initCustomExtensionManager() {
+        const input = document.getElementById('custom-input');
+        const addBtn = document.getElementById('add-btn');
+        const chips = document.getElementById('custom-chips');
+        const count = document.getElementById('custom-count');
+        const extensionPattern = /*[[${extensionRegex}]]*/ '';
+        const pattern = new RegExp(extensionPattern);
+
+
+        const maxCount = parseInt(
+            document.querySelector('.row[data-max-custom-count]').dataset.maxCustomCount,
+            10
+        );
+
+        function updateCount(x) {
+            count.textContent = String(parseInt(count.textContent, 10) + x);
+        }
+
+        function makeChip(id, name) {
+            const span = document.createElement('span');
+            span.className = 'chip';
+            span.dataset.id = id;
+
+            const label = document.createElement('span');
+            label.textContent = name;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'chip-del';
+            btn.textContent = '×';
+
+            span.append(label, btn);
+            return span;
+        }
+
+        let addLocked = false;
+
+        let enterBlocked = false;
+
+        function temporarilyBlockEnter(ms = 200) { // 알림창 닫을 때 엔터 사용시, 중복 입력 방지
+            enterBlocked = true;
+            setTimeout(() => enterBlocked = false, ms);
+        }
+
+        async function addCustom() {
+            if (addLocked) return;   // 이미 실행중이면 무시
+            addLocked = true;
+
+            const name = input.value;
+            if (!name) {
+                addLocked = false;
+                return;
+            }
+
+            // 정규식 검증
+            if (!pattern.test(name)) {
+                alert("확장자 형식이 어긋납니다.\n(소문자/숫자만 사용 가능, '.'은 중간에만 사용할 수 있습니다.)");
+                temporarilyBlockEnter(500);
+                addLocked = false;
+                return;
+            }
+
+            // 현재 개수가 이미 최대 확장 수 초과면 경고
+            const currentCount = parseInt(count.textContent, 10);
+            if (currentCount >= maxCount) {
+                alert(`커스텀 확장자는 최대 ${maxCount}개까지만 추가할 수 있습니다.`);
+                temporarilyBlockEnter(500);
+                addLocked = false;
+                return;
+            }
+
+            try {
+                const res = await fetch('/extensions/manage/custom', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                    body: new URLSearchParams({name})
+                });
+
+                if (!res.ok) {
+                    const msg = await res.text();
+                    throw new Error(msg);
+                }
+
+                const data = await res.json();
+                chips.prepend(makeChip(data.id, data.name));
+                updateCount(+1);
+                input.value = '';
+                input.focus();
+            } catch (e) {
+                alert(e.message);
+            } finally {
+                // 0.5초 후 다시 입력 가능
+                setTimeout(() => {
+                    addLocked = false;
+                }, 500);
+            }
+        }
+
+        addBtn.addEventListener('click', addCustom);
+
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                if (enterBlocked) return;
+                e.preventDefault();
+                addCustom();
+            }
+        });
+
+        async function removeCustom(id, chipEl) {
+            try {
+                const res = await fetch(`/extensions/manage/custom/${id}`, {method: 'DELETE'});
+                if (!res.ok) {
+                    const msg = await res.text();
+                    throw new Error(msg || "삭제 실패");
+                }
+                chipEl.remove();
+                updateCount(-1);
+            } catch (e) {
+                alert(e.message);
+                location.reload();
+            }
+        }
+
+        addBtn.addEventListener('click', addCustom);
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                if (enterBlocked) return;
+                e.preventDefault();
+                addCustom();
+            }
+        });
+
+        chips.addEventListener('click', (e) => {
+            const btn = e.target.closest('.chip-del');
+            if (!btn) return;
+            const chipEl = btn.closest('.chip');
+            const id = chipEl.dataset.id;
+            removeCustom(id, chipEl);
+        });
+    }
+
+
+    function initExtensionPage() {
+        initFixedExtensionToggles();
+        initCustomInputLengthGuard();
+        initCustomExtensionManager();
+    }
+
+    document.addEventListener('DOMContentLoaded', initExtensionPage);
+</script>
+</body>
+</html>
