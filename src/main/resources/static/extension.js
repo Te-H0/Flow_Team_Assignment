@@ -78,7 +78,8 @@ function initCustomExtensionManager() {
     const addBtn = document.getElementById('add-btn');
     const chips = document.getElementById('custom-chips');
     const count = document.getElementById('custom-count');
-    const extensionPattern = /*[[${extensionRegex}]]*/ '';
+    const configEl = document.getElementById('extension-config');
+    const extensionPattern = configEl.dataset.extensionRegex;
     const pattern = new RegExp(extensionPattern);
 
     const maxCount = parseInt(
@@ -99,7 +100,7 @@ function initCustomExtensionManager() {
         }
 
         if (!pattern.test(name)) {
-            alert("확장자 형식이 어긋납니다.\n(소문자/숫자만 사용 가능, '.'은 중간에만 사용할 수 있습니다.)");
+            alert("확장자 형식이 어긋납니다.\n(소문자/숫자만 사용 가능, . 접두사/접미사 사용 불가, 공백 어느 위치든 절대 금지)");
             Utils.temporarilyBlockEnter(500);
             addLocked = false;
             return;
