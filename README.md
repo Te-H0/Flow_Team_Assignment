@@ -26,7 +26,7 @@
 <br>
 
 # 고려했던 점
-
+(src/main/resources/data.sql 를 통해 초기 데이터 초기화 후 진행하였습니다.)
 ## Fixed, Custom Entity 분리하지 않은 이유
 
 - 두 개의 확장자 Entity를 별도로 분리하지 않고, 같은 Exstension Entity 내에서
