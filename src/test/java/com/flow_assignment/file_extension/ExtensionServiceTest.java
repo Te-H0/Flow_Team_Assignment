@@ -230,7 +230,7 @@ public class ExtensionServiceTest {
     }
 
     @Test
-    @DisplayName("새로운 Custom 확장자 생성 시, 같은 이름의 Custom 확장자가 존재하는 경우 DuplicateExtensionNameException")
+    @DisplayName("새로운 Custom 확장자 생성 시, 같은 이름의 Custom 확장자가 존재하는 경우 DuplicateCustomExtensionNameException")
     void createCustomExtensionThrowDuplicateExtensionNameExceptionTest() {
         // Given
         String existCustomExtensionName = "pdf";
