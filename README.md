@@ -2,14 +2,13 @@
 작성자 : 이태호<br>
 이메일 : teho.lee200@gmail.com
 
-> 화면 접속 주소 (스프링 실행 후) 
-
-> UI : http://localhost:8080/extensions/manage
-
+> 화면 접속 주소 (스프링 실행 후)<br>
+> UI : http://localhost:8080/extensions/manage<br>
 > DB : http://localhost:8080/h2-console/<br>
  → JDBC URL : jdbc:h2:mem:file_extension<br>
  → User Name : sa<br>
- → Password :
+ → Password :<br>
+> (서버 종료 시, 사라지는 memory 기반 Embedded H2 사용)
 
 <br>
 
