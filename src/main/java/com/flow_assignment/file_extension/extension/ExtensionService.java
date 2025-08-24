@@ -150,7 +150,7 @@ public class ExtensionService {
             if (extension.getType() == ExtensionType.FIXED) { // 이미 같은 이름의 Fixed 확장자가 있는 경우
                 throw new ConflictWithFixedExtensionException();
             } else if (extension.getType() == ExtensionType.CUSTOM) { // 이미 같은 이름의 Custom 확장자가 있는 경우
-                throw new DuplicateExtensionNameException();
+                throw new DuplicateCustomExtensionNameException();
             }
         });
 

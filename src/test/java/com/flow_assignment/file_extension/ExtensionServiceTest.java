@@ -243,7 +243,7 @@ public class ExtensionServiceTest {
         when(extensionRepository.findExtensionByName(existCustomExtensionName)).thenReturn(Optional.of(customExtension));
 
         // When and Then
-        assertThrows(DuplicateExtensionNameException.class, () -> extensionService.createCustomExtension(existCustomExtensionName));
+        assertThrows(DuplicateCustomExtensionNameException.class, () -> extensionService.createCustomExtension(existCustomExtensionName));
     }
 
     @Test

@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     }
 
     // 409
-    @ExceptionHandler({DuplicateExtensionNameException.class, ExtensionStateConflictException.class,
+    @ExceptionHandler({DuplicateCustomExtensionNameException.class, ExtensionStateConflictException.class,
             ConflictWithFixedExtensionException.class})
     public ResponseEntity<String> handleConflictException(Exception e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
